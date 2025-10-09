@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Connect AI English App</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Dynamic Bubble Welcome Screen -->
+    <div id="welcome-bubbles">
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+    </div>
+
+    <!-- Persistent Header -->
+    <header>
+        <h1 id="page-title">Welcome</h1>
+        <nav>
+            <button class="nav-button" data-page="main-dashboard">🏠 Home</button>
+            <button class="nav-button" data-page="my-notes">🧾 My Notes</button>
+            <button class="nav-button" data-page="settings">⚙️ Settings</button>
+        </nav>
+    </header>
+
+    <!-- Main App Content Area -->
+    <main id="app-content">
+
+        <!-- Page 1: Level Assessment -->
+        <div id="level-assessment" class="page-container">
+            <h1>Welcome to Your AI English Coach</h1>
+            <p>To personalize your learning journey, let's find your English level with a quick writing task.</p>
+            <hr>
+            <h3>Freedom Essay ✍️</h3>
+            <p>Please write a few sentences about your favorite hobby or your last holiday.</p>
+            <textarea id="writing-input" rows="6" placeholder="Start writing here..."></textarea>
+            <button id="analyze-button">Analyze My Level & Begin</button>
+            <div id="result-display"></div>
+        </div>
+
+        <!-- Page 2: Main Dashboard -->
+        <div id="main-dashboard" class="page-container" style="display: none;">
+            <h1 id="welcome-message">Welcome!</h1>
+            <p>What would you like to practice today?</p>
+            <div class="feature-grid">
+                <div id="reading-card" class="card">📖 Reading</div>
+                <div id="writing-card" class="card">✍️ Writing</div>
+                <div id="speaking-card" class="card">🎙️ Speaking</div>
+                <div id="listening-card" class="card">🎧 Listening</div>
+            </div>
+        </div>
+
+        <!-- Page 3: Reading Section -->
+        <div id="reading-section" class="page-container" style="display: none;">
+            <h1>Reading Exploration 🔍</h1>
+            <div class="topic-controls">
+                <input type="text" id="topic-input" placeholder="Enter a topic (e.g., 'Artificial Intelligence', 'Philosophy')">
+                <button id="generate-passages-button">Generate Passages</button>
+            </div>
+            <div id="passages-wrapper" class="passages-container">
+                <p>Enter a topic above to generate three reading passages at different CEFR levels.</p>
+            </div>
+        </div>
+
+        <!-- Page 4: Writing Section -->
+        <div id="writing-section" class="page-container" style="display: none;">
+            <h1>Practice Your Writing 🪶</h1>
+            <p>Write a summary about a story you read, or simply write about your day.</p>
+            <textarea id="writing-practice-input" rows="8" placeholder="Start writing here..."></textarea>
+            <button id="check-writing-button">Check My Writing 🧠</button>
+            <div id="writing-feedback" class="feedback-box">
+                Your feedback will appear here.
+            </div>
+        </div>
+        
+        <!-- Page 5: Speaking Section -->
+        <div id="speaking-section" class="page-container" style="display: none;">
+            <h1>Speaking Practice 🎙️</h1>
+            <div class="mode-selector">
+                <button id="freestyle-mode-btn" class="mode-btn active">Freestyle 💬</button>
+                <button id="guided-mode-btn" class="mode-btn">Guided Practice 📖</button>
+            </div>
+            <div id="guided-practice-area" style="display: none;">
+                <div class="guided-sentence-box">
+                    <p id="sentence-to-read">Click "Get New Sentence" to start.</p>
+                </div>
+                <button id="get-sentence-btn">Get New Sentence 🪄</button>
+            </div>
+            <div class="speaking-controls">
+                <button id="record-button">Start Recording</button>
+                <button id="stop-button" disabled>Stop Recording</button>
+            </div>
+            <h2>Your Recordings 🧾</h2>
+            <div id="recording-list"></div>
+        </div>
+
+        <!-- Page 6: Listening Section -->
+        <div id="listening-section" class="page-container" style="display: none;">
+            <div id="video-selection-area">
+                <h1>Listening Practice 🎧</h1>
+                <p>Your favorite channels. Click a video to start.</p>
+                <div id="video-list" class="video-grid"></div>
+            </div>
+            <div id="player-and-notes-area" style="display: none;">
+                <button id="close-player-button" class="secondary-button">← Back to Video List</button>
+                <div id="player-container"><div id="player"></div></div>
+                <div class="note-area">
+                    <textarea id="video-notes" placeholder="Take notes here..."></textarea>
+                    <div class="note-actions">
+                        <button id="save-note-button">Save Note</button>
+                        <span id="save-status"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Page 7: My Notes -->
+        <div id="my-notes" class="page-container" style="display: none;">
+            <div class="page-header">
+                <h1>My Notes 📑</h1>
+                <button id="export-notes-button">Export as Markdown</button>
+            </div>
+            <div id="notes-list" class="notes-container">Your saved notes will appear here.</div>
+        </div>
+        
+        <!-- Page 8: Settings -->
+        <div id="settings" class="page-container" style="display: none;">
+            <h1>Settings ⚙️</h1>
+            <div class="setting-item">
+                <span>Theme 💫/🌙</span>
+                <button id="theme-toggle-button">Toggle Dark/Light Mode</button>
+            </div>
+            <hr>
+            <h2>API Keys 🔑</h2>
+            <div class="api-key-manager">
+                <label for="api-key-input">Your Google AI Studio API Key:</label>
+                <input type="password" id="api-key-input" placeholder="Enter your key here">
+                <button id="save-api-key-button">Save Key</button>
+                <small>Your key is saved securely in your browser only.</small>
+            </div>
+            <hr>
+            <h2>Manage YouTube Channels 🎧 (Max 5)</h2>
+            <div id="channel-manager" class="channel-manager">
+                <input type="text" id="channel-input" placeholder="Paste YouTube Channel ID">
+                <button id="add-channel-button">Add Channel</button>
+            </div>
+            <div id="channel-list"></div>
+            <hr>
+            <div class="setting-item danger-zone">
+                <span>Danger Zone ⚡</span>
+                <button id="reset-app-button" class="danger-button">Reset App Data</button>
+            </div>
+        </div>
+
+    </main>
+    
+    <!-- Floating/Modal Elements -->
+    <div id="dictionary-popup" style="display: none;"></div>
+    
+    <div id="reassessment-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h2>📅 Weekly Level Check-in!</h2>
+            <p>Let's see how much you've improved. This helps us adjust your content for the week ahead.</p>
+            <div id="reassessment-mcq-area">
+                <p>Generating questions...</p>
+            </div>
+            <hr>
+            <h3>Freedom Essay ✍️</h3>
+            <p>Write a few sentences about what you learned this week.</p>
+            <textarea id="reassessment-essay" rows="5"></textarea>
+            <button id="submit-reassessment-btn">Submit & Update My Level</button>
+        </div>
+    </div>
+
+    <!-- Script Tags (Must be at the end of the body) -->
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script src="script.js"></script>
+
+</body>
+</html>
