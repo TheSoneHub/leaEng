@@ -461,7 +461,7 @@ async function fetchAllChannelVideos() {
 }
 
 async function fetchVideosFromChannel(channelId) {
-    const url = `https://www.googleapis.com/youtube/v3/search?key=${YOUTUBE_API_KEY}&channelId=${channelId}&part=snippet,id&order=date&maxResults=10`;
+    const url = `https://www.googleapis.com/youtube/v3/search?key=${YOUTUBE_API_KEY}&channelId=${channelId}&part=snippet,id&order=date&maxResults=30`;
     try {
         const response = await fetch(url);
         const data = await response.json();
