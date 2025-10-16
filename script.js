@@ -250,7 +250,7 @@ async function handleTextSelection(event) {
         popup.style.top = `${event.pageY + 5}px`;
         popup.innerHTML = `Searching for "<strong>${selection}</strong>"...`;
         try {
-            const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${selection}`);
+            const response = await fetch(`/.netlify/functions/fetchWord?word=${selection}`);
             if (!response.ok) throw new Error('Word not found.');
             const data = await response.json();
             const definition = data[0].meanings[0].definitions[0].definition;
