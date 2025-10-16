@@ -346,10 +346,17 @@ function saveAndAnalyzeRecording(audioBlob) {
         const base64Audio = reader.result.split(',')[1];
         try {
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
-            let prompt = `Transcribe this audio and provide brief, helpful feedback for a ${userLevel} English learner.`;
+            let prompt =  `Transcribe this audio and provide brief, helpful feedback for a ${userLevel} English learner in bullet points:
+            - Include the transcription
+            - Compare with expected sentence if available
+            - Give a score out of 10 for accuracy
+            - Suggest one improvement
+            Do NOT use tables.`;
             if (currentSpeakingMode === 'guided') {
                 const sentenceToRead = document.getElementById('sentence-to-read').innerText;
-                prompt = `The user was trying to say: "${sentenceToRead}". Transcribe their audio, compare it, give a score out of 10 for accuracy, and one suggestion for improvement.`;
+                prompt = `The user was trying to say: "${sentenceToRead}". 
+            Transcribe their audio, compare it with the sentence, give a score out of 10 for accuracy, 
+            and provide one suggestion for improvement. Format your output in bullet points, no tables.`;
             }
             const requestBody = { "contents": [{ "parts": [{ "text": prompt }, { "inline_data": { "mime_type": "audio/webm", "data": base64Audio } }] }] };
             const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(requestBody) });
