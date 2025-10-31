@@ -1,4 +1,4 @@
-# 🌎 Global Connect AI English App - v4.1
+# 🌎 Global Connect AI English App - v4.2
 
 **Your Personalized AI-Powered Language Learning Companion**
 
@@ -8,7 +8,16 @@
 
 Global Connect is a comprehensive web application designed to provide a rich, personalized, and engaging platform for English language learners. It leverages the power of Google's Generative AI (Gemini) to create a tailored experience that adapts to the user's skill level, from A1 to C2. The application is wrapped in a beautiful, consistent Skeuomorphic design aesthetic inspired by classic Mac OS, providing a premium and intuitive user experience.
 
----
+
+## v4.2 — What's new
+
+- Welcome screen and branding: a full-screen welcome overlay and updated app logo (`leaEng`).
+- Manual "Check My Level" flow: submit short essays to get AI-estimated CEFR levels; each check is saved to a local progress history.
+- Listening improvements: unified Back behavior and a simplified player UX; select a video to open player/notes, and a single Back button will close the player or navigate back.
+- Lofi music integration: a small header button lets you play/pause a lofi YouTube live stream (auto-pauses when you start speaking recordings).
+- Stronger speaking prompts & structured feedback: guided sentences are returned as structured JSON (sentence + phonetic + tips) and recordings are analyzed into a JSON schema which the app formats into readable feedback.
+- Robust selection lookup: dictionary lookup sanitizes selected words (removes punctuation) to reduce lookup failures.
+- Navigation/back button improvements: page-level back buttons and a navigation history stack for consistent backward navigation.
 
 ### ✨ Core Features
 
