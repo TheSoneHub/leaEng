@@ -15,6 +15,9 @@ let player; // YouTube player object
 let mediaRecorder;
 let audioChunks = [];
 let currentSpeakingMode = 'freestyle';
+// Navigation history stack and current page tracker
+let pageHistory = [];
+let currentPage = null;
 
 // --- INITIALIZATION ---
 window.addEventListener('DOMContentLoaded', initializeApp);
@@ -55,7 +58,12 @@ function initializeApp() {
 // =================================================================================
 // NAVIGATION & PAGE MANAGEMENT
 // =================================================================================
-function showPage(pageId) {
+function showPage(pageId, options = { recordHistory: true }) {
+    // Record history unless explicitly disabled
+    if (options.recordHistory && currentPage && currentPage !== pageId) {
+        pageHistory.push(currentPage);
+    }
+
     document.querySelectorAll('.page-container').forEach(p => p.style.display = 'none');
     const pageToShow = document.getElementById(pageId);
     if (pageToShow) {
@@ -78,6 +86,9 @@ function showPage(pageId) {
     if (pageId === 'speaking-section') {
         displayRecordings();
     }
+
+    // Set current page after rendering
+    currentPage = pageId;
 }
 
 function updatePageTitle(pageId) {
@@ -137,6 +148,16 @@ function setupEventListeners() {
     document.getElementById('save-api-key-button').addEventListener('click', saveApiKey);
     document.getElementById('add-channel-button').addEventListener('click', addYouTubeChannel);
     document.getElementById('reset-app-button').addEventListener('click', resetApp);
+
+    // Generic page back buttons (used on each page)
+    document.querySelectorAll('.page-back-btn').forEach(btn => {
+        btn.addEventListener('click', handlePageBack);
+    });
+}
+
+function handlePageBack() {
+    const prev = pageHistory.pop() || (userLevel ? 'main-dashboard' : 'level-assessment');
+    showPage(prev, { recordHistory: false });
 }
 
 // =================================================================================
@@ -242,22 +263,42 @@ async function generateReadingPassages() {
 }
 
 async function handleTextSelection(event) {
-    const selection = window.getSelection().toString().trim().toLowerCase();
+    // Read raw selection and do basic sanitization to avoid punctuation/hidden chars
+    const raw = window.getSelection().toString().trim();
     const popup = document.getElementById('dictionary-popup');
-    if (selection.length > 1 && selection.split(' ').length === 1) {
+
+    // Remove surrounding punctuation and any non-letter (allow hyphen and apostrophe)
+    const cleaned = raw.toLowerCase().replace(/^[^a-zA-Z'-]+|[^a-zA-Z'-]+$/g, '').replace(/[^a-zA-Z'-]/g, '');
+
+    // Only proceed for a single clean word with length > 1
+    if (cleaned && cleaned.length > 1 && !/\s/.test(cleaned)) {
         popup.style.display = 'block';
         popup.style.left = `${event.pageX + 5}px`;
         popup.style.top = `${event.pageY + 5}px`;
-        popup.innerHTML = `Searching for "<strong>${selection}</strong>"...`;
+        popup.innerHTML = `Searching for "<strong>${cleaned}</strong>"...`;
         try {
-            const response = await fetch(`/.netlify/functions/fetchWord?word=${selection}`);
+            const response = await fetch(`/.netlify/functions/fetchWord?word=${encodeURIComponent(cleaned)}`);
             if (!response.ok) throw new Error('Word not found.');
             const data = await response.json();
-            const definition = data[0].meanings[0].definitions[0].definition;
-            popup.innerHTML = `<strong>${selection}</strong>: ${definition} <br><small style="color:green;">Saved to My Notes!</small>`;
-            saveNewNote({ type: 'vocab', word: selection, definition: definition, date: new Date().toISOString() });
+
+            // Defensive checks for API response shape
+            if (!data || !Array.isArray(data) || data.length === 0 || !data[0].meanings || data[0].meanings.length === 0) {
+                throw new Error('Unexpected dictionary response');
+            }
+
+            const meaning = data[0].meanings[0];
+            const defObj = meaning.definitions && meaning.definitions[0];
+            const definition = defObj ? defObj.definition : null;
+
+            if (!definition) throw new Error('Definition not found');
+
+            popup.innerHTML = `<strong>${cleaned}</strong>: ${definition} <br><small style="color:green;">Saved to My Notes!</small>`;
+            if (typeof saveNewNote === 'function') {
+                saveNewNote({ type: 'vocab', word: cleaned, definition: definition, date: new Date().toISOString() });
+            }
         } catch (error) {
-            popup.innerHTML = `Could not find a definition for "<strong>${selection}</strong>".`;
+            console.error('Dictionary lookup error for', cleaned, error);
+            popup.innerHTML = `Could not find a definition for "<strong>${cleaned}</strong>".`;
         }
     }
 }

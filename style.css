@@ -206,6 +206,21 @@ textarea {
 .channel-tag button { background: none; border: none; color: var(--text-color); font-weight: bold; margin-left: 8px; padding: 0 5px; cursor: pointer; opacity: 0.6; }
 .channel-tag button:hover { opacity: 1; }
 
+/* Back button specific to settings page */
+#settings-back-button {
+    margin-bottom: 15px;
+    padding: 8px 14px;
+    font-size: 14px;
+}
+
+/* Generic page back button used on each page */
+.page-back-btn {
+    display: inline-block;
+    margin-bottom: 15px;
+    padding: 8px 14px;
+    font-size: 14px;
+}
+
 /* Speaking Page */
 .mode-selector { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
 .mode-btn.active { background: var(--primary-color); color: white; border-color: var(--primary-color); }
