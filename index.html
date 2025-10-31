@@ -34,7 +34,10 @@
 
     <!-- Persistent Header -->
     <header>
-        <img src="assets/logo.svg" alt="Global Connect logo" class="app-logo" />
+        <div class="logo-and-controls">
+            <img src="assets/logo.svg" alt="Global Connect logo" class="app-logo" />
+            <button id="lofi-play-btn" class="lofi-btn" title="Play/Pause lofi beats">🎧</button>
+        </div>
         <h1 id="page-title">Welcome</h1>
         <nav>
             <button class="nav-button" data-page="main-dashboard">🏠 Home</button>
@@ -43,6 +46,9 @@
             <button class="nav-button" data-page="settings">⚙️ Settings</button>
         </nav>
     </header>
+
+    <!-- Hidden container for lofi YT player -->
+    <div id="lofi-player"></div>
 
     <!-- Main App Content Area -->
     <main id="app-content">
@@ -139,13 +145,13 @@
 
         <!-- Page 6: Listening Section -->
         <div id="listening-section" class="page-container" style="display: none;">
+            <button class="page-back-btn secondary-button" aria-label="Back">← Back</button>
             <div id="video-selection-area">
                 <h1>Listening Practice 🎧</h1>
                 <p>Your favorite channels. Click a video to start.</p>
                 <div id="video-list" class="video-grid"></div>
             </div>
             <div id="player-and-notes-area" style="display: none;">
-                <button id="close-player-button" class="secondary-button">← Back to Video List</button>
                 <div id="player-container"><div id="player"></div></div>
                 <div class="note-area">
                     <textarea id="video-notes" placeholder="Take notes here..."></textarea>

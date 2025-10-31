@@ -62,6 +62,22 @@ body.dark-mode header {
     box-shadow: 0 1px 3px rgba(0,0,0,0.15);
 }
 
+.logo-and-controls { display:flex; align-items:center; gap:8px; }
+
+.lofi-btn {
+    background: linear-gradient(to bottom, #ffffff, #f1f1f1);
+    border: 1px solid #b8b8b8;
+    border-radius: 8px;
+    padding: 6px 8px;
+    font-size: 16px;
+    cursor: pointer;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 1px 2px rgba(0,0,0,0.08);
+}
+.lofi-btn.playing { background: linear-gradient(to bottom, #e6f3ff, #d0ecff); border-color: #0a84ff; }
+
+/* keep lofi player invisible container */
+#lofi-player { width:0; height:0; overflow:hidden; position:absolute; left:-9999px; }
+
 /* Welcome screen overlay */
 #welcome-screen {
     position: fixed;

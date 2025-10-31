@@ -18,6 +18,11 @@ let currentSpeakingMode = 'freestyle';
 // Navigation history stack and current page tracker
 let pageHistory = [];
 let currentPage = null;
+// Lofi player state
+let lofiPlayer = null;
+let isLofiPlaying = false;
+let lofiWasPlayingBeforeRecording = false;
+const LOFI_VIDEO_ID = 'jfKfPfyJRdk';
 
 // --- INITIALIZATION ---
 window.addEventListener('DOMContentLoaded', initializeApp);
@@ -137,7 +142,8 @@ function setupEventListeners() {
         }
     });
     document.getElementById('check-writing-button').addEventListener('click', checkUserWriting);
-    document.getElementById('close-player-button').addEventListener('click', closePlayer);
+    const closePlayerBtn = document.getElementById('close-player-button');
+    if (closePlayerBtn) closePlayerBtn.addEventListener('click', closePlayer);
     document.getElementById('save-note-button').addEventListener('click', saveVideoNote);
     document.getElementById('freestyle-mode-btn').addEventListener('click', () => setSpeakingMode('freestyle'));
     document.getElementById('guided-mode-btn').addEventListener('click', () => setSpeakingMode('guided'));
@@ -174,9 +180,22 @@ function setupEventListeners() {
             showPage(dest, { recordHistory: false });
         });
     }
+
+    // Lofi play button
+    const lofiBtn = document.getElementById('lofi-play-btn');
+    if (lofiBtn) lofiBtn.addEventListener('click', toggleLofi);
 }
 
 function handlePageBack() {
+    // If we're on the listening page and the player area is open, close the player instead of navigating back
+    if (currentPage === 'listening-section') {
+        const playerArea = document.getElementById('player-and-notes-area');
+        if (playerArea && playerArea.style.display !== 'none') {
+            closePlayer();
+            return;
+        }
+    }
+
     const prev = pageHistory.pop() || (userLevel ? 'main-dashboard' : 'level-assessment');
     showPage(prev, { recordHistory: false });
 }
@@ -417,9 +436,18 @@ async function getGuidedSentence() {
     const sentenceDisplay = document.getElementById('sentence-to-read');
     sentenceDisplay.innerText = "Generating a sentence...";
     try {
-        const prompt = `Generate one single, clear English sentence for a CEFR level ${userLevel} learner to practice speaking (10-15 words). Respond with only the sentence.`;
-        const sentence = await callGemini(prompt);
-        sentenceDisplay.innerText = sentence.trim();
+        const prompt = `You are a concise speaking prompt generator for language learners. Produce ONE clear English sentence suitable for a ${userLevel || 'B1'} learner (10-15 words). Return a JSON object with these fields exactly: {"sentence": string, "phonetic": string (IPA or simple), "target_words": [strings], "difficulty": string, "speaking_tips": [strings]}. Respond with ONLY the JSON object and nothing else.`;
+        const raw = await callGemini(prompt);
+        // remove possible code fences then parse
+        const jsonText = raw.replace(/```json\n?|\n?```/g, '').trim();
+        let parsed;
+        try { parsed = JSON.parse(jsonText); } catch (e) { parsed = null; }
+        if (parsed && parsed.sentence) {
+            // show sentence and optional phonetic below
+            sentenceDisplay.innerHTML = `<span>${parsed.sentence}</span>` + (parsed.phonetic ? `<div style="font-style:italic;color:#666;margin-top:6px;">/${parsed.phonetic}/</div>` : '');
+        } else {
+            sentenceDisplay.innerText = (raw || 'Could not get a sentence.');
+        }
     } catch (error) {
         sentenceDisplay.innerText = "Could not get a sentence. Please try again.";
     }
@@ -430,6 +458,15 @@ async function toggleRecording() {
     const recordButton = document.getElementById('record-button');
     const stopButton = document.getElementById('stop-button');
     try {
+        // Auto-pause lofi if it's playing and remember to resume later
+        if (typeof lofiPlayer !== 'undefined' && isLofiPlaying) {
+            try { lofiPlayer.pauseVideo(); } catch (e) {}
+            lofiWasPlayingBeforeRecording = true;
+            isLofiPlaying = false;
+            updateLofiButton();
+        } else {
+            lofiWasPlayingBeforeRecording = false;
+        }
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
         mediaRecorder.start();
@@ -456,6 +493,13 @@ function stopRecording() {
         recordButton.innerText = "Start Recording";
         recordButton.classList.remove('is-recording');
         stopButton.disabled = true;
+        // Resume lofi if it was playing before recording started
+        if (lofiWasPlayingBeforeRecording && lofiPlayer) {
+            try { lofiPlayer.playVideo(); } catch (e) {}
+            isLofiPlaying = true;
+            updateLofiButton();
+            lofiWasPlayingBeforeRecording = false;
+        }
     }
 }
 
@@ -468,30 +512,42 @@ function saveAndAnalyzeRecording(audioBlob) {
     reader.onloadend = async () => {
         const base64Audio = reader.result.split(',')[1];
         try {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
-            let prompt =  `Transcribe this audio and provide brief, helpful feedback for a ${userLevel} English learner in bullet points:
-            - Include the transcription
-            - Compare with expected sentence if available
-            - Give a score out of 10 for accuracy
-            - Suggest one improvement
-            Do NOT use tables.`;
-            if (currentSpeakingMode === 'guided') {
-                const sentenceToRead = document.getElementById('sentence-to-read').innerText;
-                prompt = `The user was trying to say: "${sentenceToRead}". 
-            Transcribe their audio, compare it with the sentence, give a score out of 10 for accuracy, 
-            and provide one suggestion for improvement. Format your output in bullet points, no tables.`;
-            }
-            const requestBody = { "contents": [{ "parts": [{ "text": prompt }, { "inline_data": { "mime_type": "audio/webm", "data": base64Audio } }] }] };
-            const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(requestBody) });
-            if (!response.ok) throw new Error(await response.text());
-            const data = await response.json();
-            const analysisResult = data.candidates[0].content.parts[0].text;
-            const recToUpdate = userRecordings.find(r => r.id === newRecording.id);
-            if (recToUpdate) {
-                recToUpdate.analysis = analysisResult;
-                localStorage.setItem('userRecordings', JSON.stringify(userRecordings));
-                displayRecordings();
-            }
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
+                // Stronger, structured prompt asking for JSON output
+                let promptObj = {
+                    instruction: `You are an English speaking tutor. Carefully analyze the user's audio. Provide a JSON object with these fields: "transcription" (string), "score" (number 0-10), "pronunciation_feedback" (array of short strings), "errors" (array of {type: string, original: string, correction: string}), "suggestions" (array of short strings), and "confidence" (0-1). If the user attempted a target sentence, include a field "target_sentence" with that sentence.`
+                };
+                let promptText = `Transcribe and analyze this audio for a ${userLevel || 'B1'} learner. Respond with ONLY a JSON object matching this schema: {"transcription":"...","score":number,"pronunciation_feedback":["..."],"errors":[{"type":"...","original":"...","correction":"..."}],"suggestions":["..."],"confidence":0-1${currentSpeakingMode === 'guided' ? ',"target_sentence":"' + document.getElementById('sentence-to-read').innerText.replace(/\"/g,'\\"') + '"' : ''} }.`;
+
+                const requestBody = { "contents": [{ "parts": [{ "text": promptText }, { "inline_data": { "mime_type": "audio/webm", "data": base64Audio } }] }] };
+                const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(requestBody) });
+                if (!response.ok) throw new Error(await response.text());
+                const data = await response.json();
+                const rawAnalysis = data.candidates[0].content.parts[0].text;
+
+                // Attempt to extract JSON from response
+                let jsonText = rawAnalysis.replace(/```json\n?|\n?```/g, '').trim();
+                let parsed = null;
+                try { parsed = JSON.parse(jsonText); } catch (e) { parsed = null; }
+
+                let analysisResult = rawAnalysis;
+                if (parsed) {
+                    // Build a human-friendly formatted analysis
+                    analysisResult = `Transcription: ${parsed.transcription || ''}\n` +
+                        `Score: ${parsed.score ?? 'N/A'}/10\n` +
+                        (parsed.target_sentence ? `Target: ${parsed.target_sentence}\n` : '') +
+                        `\nPronunciation Feedback:\n` + (Array.isArray(parsed.pronunciation_feedback) ? parsed.pronunciation_feedback.map(p => `- ${p}`).join('\n') : '') +
+                        `\n\nErrors:\n` + (Array.isArray(parsed.errors) ? parsed.errors.map(er => `- ${er.type || ''}: "${er.original || ''}" -> "${er.correction || ''}"`).join('\n') : '') +
+                        `\n\nSuggestions:\n` + (Array.isArray(parsed.suggestions) ? parsed.suggestions.map(s => `- ${s}`).join('\n') : '') +
+                        `\n\nConfidence: ${parsed.confidence ?? 'N/A'}`;
+                }
+
+                const recToUpdate = userRecordings.find(r => r.id === newRecording.id);
+                if (recToUpdate) {
+                    recToUpdate.analysis = analysisResult;
+                    localStorage.setItem('userRecordings', JSON.stringify(userRecordings));
+                    displayRecordings();
+                }
         } catch (error) {
             const recToUpdate = userRecordings.find(r => r.id === newRecording.id);
             if (recToUpdate) {
@@ -763,4 +819,68 @@ async function callGemini(prompt) {
         console.error("Gemini call failed:", error);
         throw error;
     }
+}
+
+// =================================================================================
+// Lofi player (small YouTube player toggled from header)
+// =================================================================================
+function createLofiPlayer() {
+    // Wait for YT API to be ready
+    if (typeof YT === 'undefined' || typeof YT.Player === 'undefined') {
+        // try again shortly
+        setTimeout(createLofiPlayer, 250);
+        return;
+    }
+    lofiPlayer = new YT.Player('lofi-player', {
+        height: '0', width: '0', videoId: LOFI_VIDEO_ID,
+        playerVars: { controls: 0, loop: 1, playlist: LOFI_VIDEO_ID, modestbranding: 1, rel: 0 },
+        events: {
+            onReady: (e) => {
+                try { e.target.setVolume(40); } catch (err) {}
+                e.target.playVideo();
+                isLofiPlaying = true;
+                updateLofiButton();
+            },
+            onStateChange: (e) => {
+                // update play state
+                if (e.data === YT.PlayerState.PAUSED || e.data === YT.PlayerState.ENDED) {
+                    isLofiPlaying = false;
+                    updateLofiButton();
+                } else if (e.data === YT.PlayerState.PLAYING) {
+                    isLofiPlaying = true;
+                    updateLofiButton();
+                }
+            }
+        }
+    });
+}
+
+function toggleLofi() {
+    if (!lofiPlayer) {
+        // create and play
+        createLofiPlayer();
+        return;
+    }
+    try {
+        const state = lofiPlayer.getPlayerState();
+        if (state === YT.PlayerState.PLAYING) {
+            lofiPlayer.pauseVideo();
+            isLofiPlaying = false;
+        } else {
+            lofiPlayer.playVideo();
+            isLofiPlaying = true;
+        }
+    } catch (err) {
+        // fallback: try to recreate
+        createLofiPlayer();
+    }
+    updateLofiButton();
+}
+
+function updateLofiButton() {
+    const btn = document.getElementById('lofi-play-btn');
+    if (!btn) return;
+    btn.classList.toggle('playing', !!isLofiPlaying);
+    btn.setAttribute('aria-pressed', !!isLofiPlaying);
+    btn.title = isLofiPlaying ? 'Pause lofi beats' : 'Play lofi beats';
 }
