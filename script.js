@@ -47,12 +47,8 @@ function initializeApp() {
     }
 
     // 5. Check if user has a level and route accordingly
-    if (userLevel) {
-        showPage('main-dashboard');
-        checkForWeeklyTest();
-    } else {
-        showPage('level-assessment');
-    }
+    // Do not auto-navigate here — show the welcome screen first.
+    // Navigation into the app will happen when the user clicks the "Enter App" button on the welcome screen.
 }
 
 // =================================================================================
@@ -86,6 +82,9 @@ function showPage(pageId, options = { recordHistory: true }) {
     if (pageId === 'speaking-section') {
         displayRecordings();
     }
+    if (pageId === 'check-level') {
+        displayLevelProgress();
+    }
 
     // Set current page after rendering
     currentPage = pageId;
@@ -100,6 +99,7 @@ function updatePageTitle(pageId) {
         'listening-section': 'Listening Practice 🎧',
         'speaking-section': 'Speaking Practice 🎙️',
         'my-notes': 'My Notes 🧾',
+        'check-level': 'Check My Level 🔎',
         'settings': 'Settings ⚙️'
     };
     document.getElementById('page-title').innerText = titles[pageId] || 'AI English App';
@@ -111,7 +111,8 @@ function updatePageTitle(pageId) {
 function setupEventListeners() {
     document.querySelectorAll('.nav-button').forEach(button => {
         button.addEventListener('click', () => {
-            if (!userLevel && button.dataset.page !== 'settings') {
+            // Allow visiting settings and check-level even if user hasn't completed assessment
+            if (!userLevel && button.dataset.page !== 'settings' && button.dataset.page !== 'check-level') {
                 return alert("Please complete the level assessment first.");
             }
             showPage(button.dataset.page);
@@ -149,10 +150,30 @@ function setupEventListeners() {
     document.getElementById('add-channel-button').addEventListener('click', addYouTubeChannel);
     document.getElementById('reset-app-button').addEventListener('click', resetApp);
 
+    // Check-level page actions
+    const checkBtn = document.getElementById('check-level-button');
+    if (checkBtn) checkBtn.addEventListener('click', checkLevelNow);
+    const clearHistBtn = document.getElementById('clear-level-history-button');
+    if (clearHistBtn) clearHistBtn.addEventListener('click', clearLevelHistory);
+
     // Generic page back buttons (used on each page)
     document.querySelectorAll('.page-back-btn').forEach(btn => {
         btn.addEventListener('click', handlePageBack);
     });
+
+    // Welcome screen enter button: hide overlay and navigate into the app
+    const enterBtn = document.getElementById('enter-app-button');
+    if (enterBtn) {
+        enterBtn.addEventListener('click', () => {
+            const welcome = document.getElementById('welcome-screen');
+            if (welcome) welcome.style.display = 'none';
+            const bubbles = document.getElementById('welcome-bubbles');
+            if (bubbles) bubbles.style.display = 'none';
+            // Navigate into the app after welcome
+            const dest = userLevel ? 'main-dashboard' : 'level-assessment';
+            showPage(dest, { recordHistory: false });
+        });
+    }
 }
 
 function handlePageBack() {
@@ -233,6 +254,67 @@ async function submitLevelReassessment() {
     } catch (error) {
         alert("There was an error assessing your level. Please try again later.");
     }
+}
+
+// =================================================================================
+// CHECK LEVEL PAGE: submit checks and store progress
+// =================================================================================
+async function checkLevelNow() {
+    const essayText = document.getElementById('check-level-input').value;
+    const resultBox = document.getElementById('checklevel-result');
+    const statusEl = document.getElementById('check-level-status');
+    if (essayText.trim().length < 20) return alert('Please write at least a short paragraph (20+ chars).');
+    if (!GEMINI_API_KEY) return alert('Please set your Google AI API Key in Settings first.');
+
+    resultBox.innerText = 'Checking your level...';
+    try {
+        const prompt = `Analyze the following text. Based on grammar, vocabulary, and sentence structure, classify the user's English proficiency into one of the CEFR levels: A1, A2, B1, B2, C1, or C2. Respond with ONLY the level code (e.g., "B1"). Text: "${essayText}"`;
+        const level = await callGemini(prompt);
+        const trimmedLevel = level.trim().toUpperCase();
+
+        // Save to progress history
+        const existing = JSON.parse(localStorage.getItem('levelChecks') || '[]');
+        existing.push({ date: new Date().toISOString(), level: trimmedLevel, essay: essayText });
+        localStorage.setItem('levelChecks', JSON.stringify(existing));
+
+        // Update user's current level as well
+        userLevel = trimmedLevel;
+        localStorage.setItem('userLevel', userLevel);
+        localStorage.setItem('lastTestDate', new Date().toISOString());
+
+        resultBox.innerText = `Detected level: ${trimmedLevel}`;
+        if (statusEl) {
+            statusEl.style.opacity = 1;
+            setTimeout(() => statusEl.style.opacity = 0, 1400);
+        }
+        displayLevelProgress();
+    } catch (error) {
+        console.error('Error checking level:', error);
+        resultBox.innerText = 'Could not determine level. Please try again later.';
+    }
+}
+
+function displayLevelProgress() {
+    const container = document.getElementById('level-progress-list');
+    const checks = JSON.parse(localStorage.getItem('levelChecks') || '[]');
+    if (!container) return;
+    if (!checks || checks.length === 0) {
+        container.innerHTML = 'No checks recorded yet.';
+        return;
+    }
+    // Show most recent first
+    const html = checks.slice().reverse().map(ch => {
+        const when = new Date(ch.date).toLocaleString();
+        const safeEssay = ch.essay ? ch.essay.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
+        return `<div class="note-card"><h3>${ch.level} <small style="margin-left:8px;font-weight:normal;color:#666;">${when}</small></h3><p>${safeEssay}</p></div>`;
+    }).join('');
+    container.innerHTML = html;
+}
+
+function clearLevelHistory() {
+    if (!confirm('Clear all saved level checks? This cannot be undone.')) return;
+    localStorage.removeItem('levelChecks');
+    displayLevelProgress();
 }
 
 // =================================================================================

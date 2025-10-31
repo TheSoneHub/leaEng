@@ -1,4 +1,4 @@
-# 🌎 Global Connect AI English App - v1.0
+# 🌎 Global Connect AI English App - v4.1
 
 **Your Personalized AI-Powered Language Learning Companion**
 
@@ -16,7 +16,7 @@ This application is packed with features designed to create a complete learning 
 
 #### 🧠 Smart Assessment & Progression
 *   **Initial Level Assessment:** A sophisticated initial assessment using a free-form essay to accurately place users on the CEFR scale (A1-C2).
-*   **📅 Weekly Progress Check:** An automated weekly modal prompts the user with new multiple-choice questions and an essay to track their improvement and dynamically update their level.
+*   **� Check My Level (Manual):** Users can now manually submit short essays on the "Check My Level" page to get an AI-estimated CEFR level. Each check is saved to a progress history for review.
 
 #### 📖 AI-Powered Reading Exploration
 *   **User-Defined Topics:** Generate reading passages on any topic you can imagine—from Tech and Psychology to Philosophy and Business.

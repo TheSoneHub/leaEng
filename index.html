@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Global Connect AI English App</title>
+    <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="assets/logo.svg">
+    <meta name="theme-color" content="#0071e3">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -19,12 +22,24 @@
         <div class="bubble"></div>
     </div>
 
+    <!-- Full-screen Welcome Overlay (shown before entering the app) -->
+    <div id="welcome-screen">
+        <div class="welcome-card">
+            <img src="assets/logo.svg" alt="leaEng logo" class="welcome-logo" />
+            <h2>Welcome to leaEng</h2>
+            <p>Your personalized AI English learning companion.</p>
+            <button id="enter-app-button" class="primary-button">Enter App — created by @thesonehub</button>
+        </div>
+    </div>
+
     <!-- Persistent Header -->
     <header>
+        <img src="assets/logo.svg" alt="Global Connect logo" class="app-logo" />
         <h1 id="page-title">Welcome</h1>
         <nav>
             <button class="nav-button" data-page="main-dashboard">🏠 Home</button>
             <button class="nav-button" data-page="my-notes">🧾 My Notes</button>
+            <button class="nav-button" data-page="check-level">🔎 Check My Level</button>
             <button class="nav-button" data-page="settings">⚙️ Settings</button>
         </nav>
     </header>
@@ -43,6 +58,24 @@
             <textarea id="writing-input" rows="6" placeholder="Start writing here..."></textarea>
             <button id="analyze-button">Analyze My Level & Begin</button>
             <div id="result-display"></div>
+        </div>
+
+        <!-- Page X: Check My Level (progress) -->
+        <div id="check-level" class="page-container" style="display: none;">
+            <button class="page-back-btn secondary-button" aria-label="Back">← Back</button>
+            <h1>Check My Level 🔎</h1>
+            <p>Write a short essay (about 50-150 words). The AI will estimate your CEFR level and save this check as part of your progress history.</p>
+            <textarea id="check-level-input" rows="6" placeholder="Write your essay here..."></textarea>
+            <div style="margin-top:12px; display:flex; gap:10px; align-items:center;">
+                <button id="check-level-button">Check My Level</button>
+                <button id="clear-level-history-button" class="secondary-button">Clear History</button>
+                <span id="check-level-status" style="font-style:italic;color:green;opacity:0;transition: opacity 0.2s;">Saved</span>
+            </div>
+            <div id="checklevel-result" class="feedback-box" style="margin-top:16px;">Your level result will appear here.</div>
+
+            <hr style="margin:20px 0;">
+            <h2>Your Level Progress 📈</h2>
+            <div id="level-progress-list">No checks recorded yet.</div>
         </div>
 
         <!-- Page 2: Main Dashboard -->
@@ -106,7 +139,6 @@
 
         <!-- Page 6: Listening Section -->
         <div id="listening-section" class="page-container" style="display: none;">
-            <button class="page-back-btn secondary-button" aria-label="Back">← Back</button>
             <div id="video-selection-area">
                 <h1>Listening Practice 🎧</h1>
                 <p>Your favorite channels. Click a video to start.</p>
