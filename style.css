@@ -78,27 +78,114 @@ body.dark-mode header {
 /* keep lofi player invisible container */
 #lofi-player { width:0; height:0; overflow:hidden; position:absolute; left:-9999px; }
 
-/* Welcome screen overlay */
+/* Welcome screen (full-page hero) */
 #welcome-screen {
     position: fixed;
     inset: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.5));
+    /* Use the surface color (solid) so it follows light/dark theme preferences */
+    background: var(--surface-color);
+    color: var(--text-color);
     z-index: 20000;
 }
+
 #welcome-screen .welcome-card {
-    background: var(--surface-color);
-    padding: 28px;
-    border-radius: 12px;
+    /* Full-viewport welcome area that reads like a page */
+    background: transparent;
+    padding: 40px;
+    border-radius: 0;
     text-align: center;
-    box-shadow: var(--deep-shadow);
-    max-width: 420px;
-    width: 90%;
+    box-shadow: none;
+    max-width: 1000px;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
 }
-.welcome-logo { height: 84px; width:84px; margin-bottom: 12px; border-radius: 10px; }
-#enter-app-button, #welcome-screen .primary-button { margin-top: 12px; }
+
+.welcome-logo { height: 100px; width:100px; margin-bottom: 16px; border-radius: 16px; background: transparent; padding: 12px; }
+
+#welcome-screen h2 { font-size: 42px; margin: 8px 0; color: var(--text-color); }
+#welcome-screen p { font-size: 18px; margin-bottom: 18px; color: rgba(0,0,0,0.65); max-width: 720px; }
+
+/* Improve contrast for dark-mode */
+body.dark-mode #welcome-screen p { color: rgba(255,255,255,0.9); }
+
+/* Enter button adapts for theme */
+#enter-app-button, #welcome-screen .primary-button {
+    margin-top: 12px;
+    background: var(--primary-color);
+    color: white;
+    border-radius: 8px;
+    padding: 12px 18px;
+    font-weight: 700;
+    border: none;
+    box-shadow: 0 6px 18px rgba(10,132,255,0.18);
+}
+body.dark-mode #enter-app-button, body.dark-mode #welcome-screen .primary-button {
+    background: #0a84ff;
+    box-shadow: 0 6px 18px rgba(10,132,255,0.22);
+}
+
+/* --- Theme-sensitive dynamic icons (pure CSS, no HTML changes) --- */
+/* Use pseudo-elements on the welcome-card and heading to show small decorative icons that change by theme */
+#welcome-screen::before,
+#welcome-screen::after,
+#welcome-screen h2::after {
+    position: absolute;
+    font-size: 48px;
+    opacity: 0.95;
+    transition: transform 0.4s ease, opacity 0.3s ease;
+    pointer-events: none;
+}
+
+#welcome-screen::before {
+    content: "✍️";
+    top: 12%;
+    left: 8%;
+    transform: translateY(0) scale(1);
+}
+
+#welcome-screen::after {
+    content: "🎧";
+    bottom: 14%;
+    right: 10%;
+    transform: translateY(0) scale(1);
+}
+
+#welcome-screen h2::after {
+    content: "🌟";
+    display: block;
+    right: -10px;
+    top: -18px;
+    transform: translateY(0) scale(1.1);
+}
+
+/* Change icons in dark mode to be theme-appropriate */
+body.dark-mode #welcome-screen::before { content: "🖋️"; }
+body.dark-mode #welcome-screen::after { content: "🎧"; }
+body.dark-mode #welcome-screen h2::after { content: "🌙"; }
+
+/* Subtle float animation on hover/focus to indicate sensitivity */
+#welcome-screen:hover::before,
+#welcome-screen:hover::after,
+#welcome-screen:hover h2::after {
+    transform: translateY(-10px) scale(1.05) rotate(-6deg);
+    opacity: 1;
+}
+
+/* Small responsive adjustments */
+@media (max-width: 600px) {
+    #welcome-screen::before, #welcome-screen::after, #welcome-screen h2::after { font-size: 34px; }
+    #welcome-screen h2 { font-size: 28px; }
+    #welcome-screen p { font-size: 15px; }
+}
 
 main { 
     padding: 30px 40px; 
